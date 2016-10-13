@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/30x/permissions-helper-functions/issues"
   },
-  "homepage": "https://github.com/30x/permissions-helper-functions#readme"
+  "homepage": "https://github.com/30x/permissions-helper-functions#readme",
+  "dependencies": {
+    "http-helper-functions": "0.0.38"
+  }
 }
