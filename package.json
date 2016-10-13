@@ -1,0 +1,19 @@
+{
+  "name": "permissions-helper-functions",
+  "version": "0.0.2",
+  "description": "Helper function for use with the permissions service",
+  "main": "permissions-helper-functions.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/30x/permissions-helper-functions.git"
+  },
+  "author": "Martin Nally",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/30x/permissions-helper-functions/issues"
+  },
+  "homepage": "https://github.com/30x/permissions-helper-functions#readme"
+}

@@ -6,7 +6,8 @@ function Permissions(permissions) {
 }
 
 Permissions.prototype.resolveRelativeURLs = function(baseURL) {
-  this.permissions._subject = url.resolve(baseURL, this.permissions._subject)
+  if (this.permissions._subject)
+    this.permissions._subject = url.resolve(baseURL, this.permissions._subject)
   for (var property in this.permissions)
     if (['_metadata', '_subject', '_sharedWith'].indexOf(property) < 0) {
       var permObject = this.permissions[property]
