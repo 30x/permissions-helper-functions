@@ -60,7 +60,7 @@ function createPermissionsFor(flowThroughHeaders, resourceURL, permissions, call
           if (clientRes.statusCode == 201) { 
             body = JSON.parse(body)
             lib.internalizeURLs(body, flowThroughHeaders.host)
-            callback(null, resourceURL, body, clientRes.headers)
+            callback(null, clientRes.headers.location, body, clientRes.headers)
           } else if (clientRes.statusCode == 400)
             callback(400, body)
           else if (clientRes.statusCode == 403)
@@ -76,6 +76,25 @@ function createPermissionsFor(flowThroughHeaders, resourceURL, permissions, call
         })
     })
   }
+}
+
+function createPermissionsThen(req, res, resourceURL, permissions, callback) {
+  resourceURL = resourceURL || `//${req.host}/${req.url}`
+  var flowThroughHeaders = req.headers
+  createPermissionsFor(flowThroughHeaders, resourceURL, permissions, function(err, permissionsURL, permissions, headers) {
+    if (err == 500)
+      lib.internalError(res, permissionsURL)
+    else if (err == 400)
+      lib.badRequest(res, body)
+    else if (err == 403)
+      lib.forbidden(req, res)
+    else if (err == 409)
+      lib.duplicate(res, body)
+    else if (err)
+      lib.internalError(res, `failed to create permissions for ${resourceURL} err: ${err} message ${permissionsURL}`)
+    else
+      callback(permissionsURL, permissions)
+  })
 }
 
 function withAllowedDo(flowThroughHeaders, resourceURL, property, action, callback) {
@@ -126,5 +145,6 @@ function ifAllowedThen(flowThroughHeaders, resourceURL, property, action, callba
 
 exports.Permissions = Permissions
 exports.createPermissionsFor = createPermissionsFor
+exports.createPermissionsThen = createPermissionsThen
 exports.ifAllowedThen = ifAllowedThen
 exports.withAllowedDo = withAllowedDo
