@@ -65,6 +65,8 @@ function createPermissionsFor(flowThroughHeaders, resourceURL, permissions, call
             callback(400, body)
           else if (clientRes.statusCode == 403)
             callback(403)
+          else if (clientRes.statusCode == 409)
+            callback(409)
           else {
             var err = {statusCode: clientRes.statusCode,
               msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${body}`
