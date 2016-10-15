@@ -1,6 +1,6 @@
 {
   "name": "permissions-helper-functions",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Helper function for use with the permissions service",
   "main": "permissions-helper-functions.js",
   "scripts": {
@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/30x/permissions-helper-functions#readme",
   "dependencies": {
-    "http-helper-functions": "0.0.40"
+    "http-helper-functions": "0.0.41"
   }
 }
