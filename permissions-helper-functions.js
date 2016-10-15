@@ -97,8 +97,9 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback) {
   })
 }
 
-function withAllowedDo(flowThroughHeaders, resourceURL, property, action, callback) {
-  var user = lib.getUser(flowThroughHeaders.authorization)
+function withAllowedDo(req, res, resourceURL, property, action, callback) {
+  resourceURL =  resourceURL || '//' + req.headers.host + req.url
+  var user = lib.getUser(req.headers.authorization)
   var resourceURLs = Array.isArray(resourceURL) ? resourceURL : [resourceURL]
   var qs = resourceURLs.map(x => `resource=${x}`).join('&')
   var permissionsURL = `/is-allowed?${qs}`
@@ -108,38 +109,33 @@ function withAllowedDo(flowThroughHeaders, resourceURL, property, action, callba
     permissionsURL += '&action=' + action
   if (property !== null)
     permissionsURL += '&property=' + property
-  lib.sendInternalRequest(flowThroughHeaders, permissionsURL, 'GET', undefined, function (err, clientRes) {
-    if (err)
-      callback(500, err)
-    else
-      lib.getClientResponseBody(clientRes, function(body) {
-        try {
-          body = JSON.parse(body)
-        } catch (e) {
-          console.error('withAllowedDo: JSON parse failed. url:', permissionsURL, 'body:', body, 'error:', e)
-        }
-        callback(null, clientRes.statusCode, body)
-      })
+  lib.sendInternalRequestThen(req.headers, res, permissionsURL, 'GET', undefined, function (clientRes) {
+    lib.getClientResponseBody(clientRes, function(body) {
+      try {
+        body = JSON.parse(body)
+      } catch (e) {
+        console.error('withAllowedDo: JSON parse failed. url:', permissionsURL, 'body:', body, 'error:', e)
+      }
+      var statusCode = clientRes.statusCode
+      if (statusCode == 200)
+        callback(body)
+      else if (statusCode == 404)
+        lib.notFound(req, res)
+      else
+        lib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action}`)
+    })
   })
 }
 
-function ifAllowedThen(flowThroughHeaders, resourceURL, property, action, callback) {
-  //resourceURL =  resourceURL || '//' + req.headers.host + req.url
-  withAllowedDo(flowThroughHeaders, resourceURL, property, action, function(err, statusCode, allowed) {
-    if (err)
-      callback(err)
-    else if (statusCode == 200)
-      if (allowed === true)
-        callback()
-      else
-        if (lib.getUser(flowThroughHeaders.authorization) !== null)
-          callback(403)
-        else 
-          callback(401)
-    else if (statusCode == 404)
-      callback(404)
+function ifAllowedThen(req, res, resourceURL, property, action, callback) {
+  withAllowedDo(req, res, resourceURL, property, action, function(allowed) {
+    if (allowed === true)
+      callback()
     else
-      callback(500, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action}`)
+      if (lib.getUser(req.headers.authorization) !== null)
+        lib.forbidden(req, res)
+      else 
+        lib.unauthorized(req, res)
   })
 }
 
