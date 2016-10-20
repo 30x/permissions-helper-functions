@@ -120,7 +120,7 @@ function withAllowedDo(req, res, resourceURL, property, action, callback) {
       if (statusCode == 200)
         callback(body)
       else if (statusCode == 404)
-        lib.notFound(req, res)
+        lib.notFound(req, res, `Not Found. component: ${process.env.COMPONENT} permissionsURL: ${permissionsURL}\n`)
       else
         lib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action}`)
     })
@@ -132,8 +132,8 @@ function ifAllowedThen(req, res, resourceURL, property, action, callback) {
     if (allowed === true)
       callback()
     else
-      if (lib.getUser(req.headers.authorization) !== null)
-        lib.forbidden(req, res)
+      if (lib.getUser(req.headers.authorization) !== null) 
+        lib.forbidden(req, res, `Forbidden. component: ${process.env.COMPONENT} resourceURL: ${resourceURL} property: ${property} action: ${action}\n`)
       else 
         lib.unauthorized(req, res)
   })
