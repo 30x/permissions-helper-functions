@@ -17,10 +17,11 @@ Permissions.prototype.resolveRelativeURLs = function(baseURL) {
     }
 }
 
-function createPermissionsFor(flowThroughHeaders, resourceURL, permissions, callback) {
+function createPermissionsThen(req, res, resourceURL, permissions, callback) {
+  var flowThroughHeaders = req.headers
   var user = lib.getUser(flowThroughHeaders.authorization)
   if (user == null)
-    callback(401)
+    lib.unauthorized(req, res)
   else {
     if (permissions === null || permissions === undefined)
       permissions = {
@@ -52,49 +53,23 @@ function createPermissionsFor(flowThroughHeaders, resourceURL, permissions, call
       } 
     }
     var postData = JSON.stringify(permissions)
-    lib.sendInternalRequest(flowThroughHeaders, '/permissions', 'POST', postData, function (err, clientRes) {
-      if (err)
-        callback(500, err)
-      else
-        lib.getClientResponseBody(clientRes, function(body) {
-          if (clientRes.statusCode == 201) { 
-            body = JSON.parse(body)
-            lib.internalizeURLs(body, flowThroughHeaders.host)
-            callback(null, clientRes.headers.location, body, clientRes.headers)
-          } else if (clientRes.statusCode == 400)
-            callback(400, body)
-          else if (clientRes.statusCode == 403)
-            callback(403)
-          else if (clientRes.statusCode == 409)
-            callback(409)
-          else {
-            var err = {statusCode: clientRes.statusCode,
-              msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${body}`
-            }
-            callback(500, err)
-          }
-        })
+    lib.sendInternalRequestThen(req, res, '/permissions', 'POST', postData, function (clientRes) {
+      lib.getClientResponseBody(clientRes, function(body) {
+        if (clientRes.statusCode == 201) { 
+          body = JSON.parse(body)
+          lib.internalizeURLs(body, flowThroughHeaders.host)
+          callback(clientRes.headers.location, body, clientRes.headers)
+        } else if (clientRes.statusCode == 400)
+          lib.badRequest(res, body)
+        else if (clientRes.statusCode == 403)
+          lib.forbidden(req, res)
+        else if (clientRes.statusCode == 409)
+          lib.duplicate(res, body)
+        else 
+          lib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${body}`})
+    })
     })
   }
-}
-
-function createPermissionsThen(req, res, resourceURL, permissions, callback) {
-  resourceURL = resourceURL || `//${req.host}/${req.url}`
-  var flowThroughHeaders = req.headers
-  createPermissionsFor(flowThroughHeaders, resourceURL, permissions, function(err, permissionsURL, permissions, headers) {
-    if (err == 500)
-      lib.internalError(res, permissionsURL)
-    else if (err == 400)
-      lib.badRequest(res, body)
-    else if (err == 403)
-      lib.forbidden(req, res)
-    else if (err == 409)
-      lib.duplicate(res, body)
-    else if (err)
-      lib.internalError(res, `failed to create permissions for ${resourceURL} err: ${err} message ${permissionsURL}`)
-    else
-      callback(permissionsURL, permissions)
-  })
 }
 
 function withAllowedDo(req, res, resourceURL, property, action, callback) {
@@ -109,7 +84,7 @@ function withAllowedDo(req, res, resourceURL, property, action, callback) {
     permissionsURL += '&action=' + action
   if (property !== null)
     permissionsURL += '&property=' + property
-  lib.sendInternalRequestThen(req.headers, res, permissionsURL, 'GET', undefined, function (clientRes) {
+  lib.sendInternalRequestThen(req, res, permissionsURL, 'GET', undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       try {
         body = JSON.parse(body)
@@ -140,7 +115,6 @@ function ifAllowedThen(req, res, resourceURL, property, action, callback) {
 }
 
 exports.Permissions = Permissions
-exports.createPermissionsFor = createPermissionsFor
 exports.createPermissionsThen = createPermissionsThen
 exports.ifAllowedThen = ifAllowedThen
 exports.withAllowedDo = withAllowedDo
