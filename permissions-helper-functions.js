@@ -62,7 +62,7 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback) {
         } else if (clientRes.statusCode == 400)
           lib.badRequest(res, body)
         else if (clientRes.statusCode == 403)
-          lib.forbidden(req, res)
+          lib.forbidden(req, res, `Forbidden. component: ${process.env.COMPONENT} unable to create permissions for ${permissions._subject}. You may not be allowed to inherit permissions from ${permissions._inheritsPermissionsOf}`)
         else if (clientRes.statusCode == 409)
           lib.duplicate(res, body)
         else 
