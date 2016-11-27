@@ -10,10 +10,12 @@ Permissions.prototype.resolveRelativeURLs = function(baseURL) {
   if (this.permissions._subject)
     this.permissions._subject = url.resolve(baseURL, this.permissions._subject)
   for (var property in this.permissions)
-    if (['_metadata', '_subject', '_sharedWith', '_inheritsPermissionsOf', 'test-data'].indexOf(property) < 0) {
+    if (['_metadata', '_subject', '_inheritsPermissionsOf'].indexOf(property) < 0) {
       var permObject = this.permissions[property]
-      for (var action in permObject)
-        permObject[action] = permObject[action].map(actor => url.resolve(baseURL, actor))
+      if (typeof permObject == 'object')
+        for (var action in permObject)
+          if (Array.isArray(permObject[action]))
+            permObject[action] = permObject[action].map(actor => url.resolve(baseURL, actor))
     }
 }
 
@@ -97,7 +99,7 @@ function withAllowedDo(req, res, resourceURL, property, action, callback) {
       else if (statusCode == 404)
         lib.notFound(req, res, `Not Found. component: ${process.env.COMPONENT} permissionsURL: ${permissionsURL}\n`)
       else
-        lib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action}`)
+        lib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action} body: ${body}`)
     })
   })
 }
@@ -108,7 +110,7 @@ function ifAllowedThen(req, res, resourceURL, property, action, callback) {
       callback()
     else
       if (lib.getUser(req.headers.authorization) !== null) 
-        lib.forbidden(req, res, `Forbidden. component: ${process.env.COMPONENT} resourceURL: ${resourceURL} property: ${property} action: ${action}\n`)
+        lib.forbidden(req, res, `Forbidden. component: ${process.env.COMPONENT} resourceURL: ${resourceURL || '//' + req.headers.host + req.url} property: ${property} action: ${action} user: ${lib.getUser(req.headers.authorization)}\n`)
       else 
         lib.unauthorized(req, res)
   })
