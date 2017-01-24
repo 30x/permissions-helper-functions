@@ -60,7 +60,7 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback) {
         if (clientRes.statusCode == 201) { 
           body = JSON.parse(body)
           lib.internalizeURLs(body, flowThroughHeaders.host)
-          callback(clientRes.headers.location, body, clientRes.headers)
+          callback(null, clientRes.headers.location, body, clientRes.headers)
         } else if (clientRes.statusCode == 400)
           lib.badRequest(res, body)
         else if (clientRes.statusCode == 403)
