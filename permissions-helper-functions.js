@@ -26,33 +26,14 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
     lib.unauthorized(req, res)
   else {
     if (permissions === null || permissions === undefined)
-      permissions = {
-        _subject: resourceURL,
-        _permissions: {
-          read: [user],
-          update: [user],
-          delete: [user]
-        },
-        _self: {
-          read: [user],
-          delete: [user],
-          update: [user],
-          create: [user]
-        }
-      }
+      lib.badRequest(res, `may not set null permissions: ${resourceURL}`)
     else {
       if (permissions._subject === undefined)
         permissions._subject = resourceURL
-      else
-        if (permissions._subject != resourceURL)
-          callback(400, 'value of _subject must match resourceURL')
-      var permissionsPermissons = permissions._permissions
-      if (permissions._inheritsPermissionsOf === undefined && (permissionsPermissons === undefined || permissionsPermissons.update === undefined)) {
-        if (permissionsPermissons === undefined) 
-          permissions._permissions = permissionsPermissons = {}
-        permissionsPermissons.update = [user]
-        permissionsPermissons.read = (permissions._self ? permissions._self.read: null) || [user]
-      } 
+      else if (permissions._subject != resourceURL)
+        callback(400, 'value of _subject must match resourceURL')
+      else if (permissions._inheritsPermissionsOf === undefined && (permissions._self === undefined || permissions._self.governs === undefined)) 
+        lib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
     lib.sendInternalRequestThen(req, res, '/permissions', 'POST', postData, function (clientRes) {
@@ -77,6 +58,8 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
 }
 
 function withAllowedDo(req, res, resourceURL, property, action, base, path, callback) {
+  if (typeof base == 'function')
+    [callback, base] = [base, callback] // swap them
   resourceURL =  resourceURL || '//' + req.headers.host + req.url
   var user = lib.getUser(req.headers.authorization)
   var resourceURLs = Array.isArray(resourceURL) ? resourceURL : [resourceURL]
