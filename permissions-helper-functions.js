@@ -19,7 +19,7 @@ Permissions.prototype.resolveRelativeURLs = function(baseURL) {
     }
 }
 
-function createPermissionsThen(req, res, resourceURL, permissions, callback) {
+function createPermissionsThen(req, res, resourceURL, permissions, callback, errorCallback) {
   var flowThroughHeaders = req.headers
   var user = lib.getUser(flowThroughHeaders.authorization)
   if (user == null)
@@ -61,7 +61,9 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback) {
           body = JSON.parse(body)
           lib.internalizeURLs(body, flowThroughHeaders.host)
           callback(null, clientRes.headers.location, body, clientRes.headers)
-        } else if (clientRes.statusCode == 400)
+        } else if (errorCallback)
+          errorCallback(clientRes.statusCode, body)
+        else if (clientRes.statusCode == 400)
           lib.badRequest(res, body)
         else if (clientRes.statusCode == 403)
           lib.forbidden(req, res, `Forbidden. component: ${process.env.COMPONENT} unable to create permissions for ${permissions._subject}. You may not be allowed to inherit permissions from ${permissions._inheritsPermissionsOf}`)
@@ -69,12 +71,12 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback) {
           lib.duplicate(res, body)
         else 
           lib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${body}`})
-    })
+      })
     })
   }
 }
 
-function withAllowedDo(req, res, resourceURL, property, action, callback) {
+function withAllowedDo(req, res, resourceURL, property, action, base, path, callback) {
   resourceURL =  resourceURL || '//' + req.headers.host + req.url
   var user = lib.getUser(req.headers.authorization)
   var resourceURLs = Array.isArray(resourceURL) ? resourceURL : [resourceURL]
@@ -86,6 +88,10 @@ function withAllowedDo(req, res, resourceURL, property, action, callback) {
     permissionsURL += '&action=' + action
   if (property !== null)
     permissionsURL += '&property=' + property
+  if (base !== null)
+    permissionsURL += '&base=' + base
+  if (path !== null)
+    permissionsURL += '&path=' + path
   lib.sendInternalRequestThen(req, res, permissionsURL, 'GET', undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       try {
@@ -104,8 +110,10 @@ function withAllowedDo(req, res, resourceURL, property, action, callback) {
   })
 }
 
-function ifAllowedThen(req, res, resourceURL, property, action, callback) {
-  withAllowedDo(req, res, resourceURL, property, action, function(allowed) {
+function ifAllowedThen(req, res, resourceURL, property, action, base, path, callback) {
+  if (typeof base == 'function')
+    [callback, base] = [base, callback] // swap them
+  withAllowedDo(req, res, resourceURL, property, action, base, path, function(allowed) {
     if (allowed === true)
       callback()
     else
