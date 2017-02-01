@@ -1,6 +1,7 @@
 'use strict'
 const url = require('url')
 const lib = require('http-helper-functions')
+const rLib = require('response-helper-functions')
 
 function Permissions(permissions) {
   this.permissions = permissions
@@ -23,17 +24,17 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
   var flowThroughHeaders = req.headers
   var user = lib.getUser(flowThroughHeaders.authorization)
   if (user == null)
-    lib.unauthorized(req, res)
+    rLib.unauthorized(res)
   else {
     if (permissions === null || permissions === undefined)
-      lib.badRequest(res, `may not set null permissions: ${resourceURL}`)
+      rLib.badRequest(res, `may not set null permissions: ${resourceURL}`)
     else {
       if (permissions._subject === undefined)
         permissions._subject = resourceURL
       else if (permissions._subject != resourceURL)
         callback(400, 'value of _subject must match resourceURL')
       else if (permissions._inheritsPermissionsOf === undefined && (permissions._self === undefined || permissions._self.governs === undefined)) 
-        lib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
+        rLib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
     lib.sendInternalRequestThen(res, 'POST','/permissions',  lib.flowThroughHeaders(req), postData, function (clientRes) {
@@ -45,13 +46,13 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
         } else if (errorCallback)
           errorCallback(clientRes.statusCode, body)
         else if (clientRes.statusCode == 400)
-          lib.badRequest(res, body)
+          rLib.badRequest(res, body)
         else if (clientRes.statusCode == 403)
-          lib.forbidden(req, res, `Forbidden. component: ${process.env.COMPONENT} unable to create permissions for ${permissions._subject}. You may not be allowed to inherit permissions from ${permissions._inheritsPermissionsOf}`)
+          rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT} unable to create permissions for ${permissions._subject}. You may not be allowed to inherit permissions from ${permissions._inheritsPermissionsOf}`)
         else if (clientRes.statusCode == 409)
-          lib.duplicate(res, body)
+          rLib.duplicate(res, body)
         else 
-          lib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${body}`})
+          rLib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${body}`})
       })
     })
   }
@@ -62,7 +63,7 @@ function deletePermissionsThen(req, res, resourceURL, callback) {
     lib.getClientResponseBody(clientRes, function(body) {
       var statusCode = clientRes.statusCode
       if (statusCode !== 200)
-        lib.internalError(res, `unable to delete permissions for ${resourceURL} statusCode: ${clientRes.statusCode} text: ${body}`)
+        rLib.internalError(res, `unable to delete permissions for ${resourceURL} statusCode: ${clientRes.statusCode} text: ${body}`)
     })
   })  
 }
@@ -96,9 +97,9 @@ function withAllowedDo(req, res, resourceURL, property, action, base, path, call
       if (statusCode == 200)
         callback(body)
       else if (statusCode == 404)
-        lib.notFound(req, res, `Not Found. component: ${process.env.COMPONENT} permissionsURL: ${permissionsURL}\n`)
+        rLib.notFound(res, `Not Found. component: ${process.env.COMPONENT} permissionsURL: ${permissionsURL}\n`)
       else
-        lib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action} body: ${body}`)
+        rLib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action} body: ${body}`)
     })
   })
 }
@@ -111,9 +112,9 @@ function ifAllowedThen(req, res, resourceURL, property, action, base, path, call
       callback()
     else
       if (lib.getUser(req.headers.authorization) !== null) 
-        lib.forbidden(req, res, `Forbidden. component: ${process.env.COMPONENT} resourceURL: ${resourceURL || '//' + req.headers.host + req.url} property: ${property} action: ${action} user: ${lib.getUser(req.headers.authorization)}\n`)
+        rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT} resourceURL: ${resourceURL || '//' + req.headers.host + req.url} property: ${property} action: ${action} user: ${lib.getUser(req.headers.authorization)}\n`)
       else 
-        lib.unauthorized(req, res)
+        rLib.unauthorized(res)
   })
 }
 

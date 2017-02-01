@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/30x/permissions-helper-functions#readme",
   "dependencies": {
-    "http-helper-functions": "0.0.82"
+    "http-helper-functions": "0.0.82",
+    "response-helper-functions": "0.0.1"
   }
 }
