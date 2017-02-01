@@ -48,7 +48,7 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
         else if (clientRes.statusCode == 400)
           rLib.badRequest(res, body)
         else if (clientRes.statusCode == 403)
-          rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT} unable to create permissions for ${permissions._subject}. You may not be allowed to inherit permissions from ${permissions._inheritsPermissionsOf}`)
+          rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} unable to create permissions for ${permissions._subject}. You may not be allowed to inherit permissions from ${permissions._inheritsPermissionsOf}`)
         else if (clientRes.statusCode == 409)
           rLib.duplicate(res, body)
         else 
@@ -97,7 +97,7 @@ function withAllowedDo(req, res, resourceURL, property, action, base, path, call
       if (statusCode == 200)
         callback(body)
       else if (statusCode == 404)
-        rLib.notFound(res, `Not Found. component: ${process.env.COMPONENT} permissionsURL: ${permissionsURL}\n`)
+        rLib.notFound(res, `Not Found. component: ${process.env.COMPONENT_NAME} permissionsURL: ${permissionsURL}\n`)
       else
         rLib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action} body: ${body}`)
     })
@@ -112,7 +112,7 @@ function ifAllowedThen(req, res, resourceURL, property, action, base, path, call
       callback()
     else
       if (lib.getUser(req.headers.authorization) !== null) 
-        rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT} resourceURL: ${resourceURL || '//' + req.headers.host + req.url} property: ${property} action: ${action} user: ${lib.getUser(req.headers.authorization)}\n`)
+        rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL || '//' + req.headers.host + req.url} property: ${property} action: ${action} user: ${lib.getUser(req.headers.authorization)}\n`)
       else 
         rLib.unauthorized(res)
   })
