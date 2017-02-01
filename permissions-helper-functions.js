@@ -57,6 +57,16 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
   }
 }
 
+function deletePermissionsThen(req, res, resourceURL, callback) {
+  lib.sendInternalRequestThen(req.headers, res, `/permissions?${resourceURL}`, 'DELETE', undefined, function (clientRes) {
+    lib.getClientResponseBody(clientRes, function(body) {
+      var statusCode = clientRes.statusCode
+      if (statusCode !== 200)
+        lib.internalError(res, `unable to delete permissions for ${resourceURL} statusCode: ${clientRes.statusCode} text: ${body}`)
+    })
+  })  
+}
+
 function withAllowedDo(req, res, resourceURL, property, action, base, path, callback) {
   if (typeof base == 'function')
     [callback, base] = [base, callback] // swap them
@@ -109,5 +119,6 @@ function ifAllowedThen(req, res, resourceURL, property, action, base, path, call
 
 exports.Permissions = Permissions
 exports.createPermissionsThen = createPermissionsThen
+exports.deletePermissionsThen = deletePermissionsThen
 exports.ifAllowedThen = ifAllowedThen
 exports.withAllowedDo = withAllowedDo
