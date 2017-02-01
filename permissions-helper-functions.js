@@ -36,7 +36,7 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
         lib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
-    lib.sendInternalRequestThen(req, res, '/permissions', 'POST', postData, function (clientRes) {
+    lib.sendInternalRequestThen(res, 'POST','/permissions',  lib.flowThroughHeaders(req), postData, function (clientRes) {
       lib.getClientResponseBody(clientRes, function(body) {
         if (clientRes.statusCode == 201) { 
           body = JSON.parse(body)
@@ -58,7 +58,7 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
 }
 
 function deletePermissionsThen(req, res, resourceURL, callback) {
-  lib.sendInternalRequestThen(req.headers, res, `/permissions?${resourceURL}`, 'DELETE', undefined, function (clientRes) {
+  lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${resourceURL}`, lib.flowThroughHeaders(req), undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       var statusCode = clientRes.statusCode
       if (statusCode !== 200)
@@ -85,7 +85,7 @@ function withAllowedDo(req, res, resourceURL, property, action, base, path, call
     permissionsURL += '&base=' + base
   if (path !== null)
     permissionsURL += '&path=' + path
-  lib.sendInternalRequestThen(req, res, permissionsURL, 'GET', undefined, function (clientRes) {
+  lib.sendInternalRequestThen(res, 'GET', permissionsURL, lib.flowThroughHeaders(req), undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       try {
         body = JSON.parse(body)
