@@ -62,8 +62,9 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
 function deletePermissionsThen(flowThroughHeaders, res, resourceURL, callback) {
   lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${resourceURL}`, flowThroughHeaders, undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
-      var statusCode = clientRes.statusCode
-      if (statusCode !== 200)
+      if (clientRes.statusCode == 200)
+        callback()
+      else
         rLib.internalError(res, `unable to delete permissions for ${resourceURL} statusCode: ${clientRes.statusCode} text: ${body}`)
     })
   })  
