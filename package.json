@@ -1,6 +1,6 @@
 {
   "name": "permissions-helper-functions",
-  "version": "0.0.38",
+  "version": "0.0.39",
   "description": "Helper function for use with the permissions service",
   "main": "permissions-helper-functions.js",
   "scripts": {

@@ -16,7 +16,9 @@ Permissions.prototype.resolveRelativeURLs = function(baseURL) {
       if (typeof permObject == 'object')
         for (var action in permObject)
           if (Array.isArray(permObject[action]))
-            permObject[action] = permObject[action].map(actor => url.resolve(baseURL, actor))
+            // The Node resolve implementation has a bug that causes URLs of the form http://authority#frag to get 
+            // changed to http://authority/#frag (extra slash) so don't give the URL to resolve if it is a already an absolute URL
+            permObject[action] = permObject[action].map(actor => actor.startsWith('http://') || actor.startsWith('https://') ? actor : url.resolve(baseURL, actor))
     }
 }
 
@@ -68,25 +70,25 @@ function deletePermissionsThen(req, res, resourceURL, callback) {
   })  
 }
 
-function withAllowedDo(req, res, resourceURL, property, action, base, path, callback) {
+function withAllowedDo(headers, res, resourceURL, property, action, base, path, callback) {
+  resourceURL = rLib.externalizeURLs(resourceURL)
   if (typeof base == 'function')
     [callback, base] = [base, callback] // swap them
-  resourceURL =  resourceURL || '//' + req.headers.host + req.url
-  var user = lib.getUser(req.headers.authorization)
+  var user = lib.getUser(headers.authorization)
   var resourceURLs = Array.isArray(resourceURL) ? resourceURL : [resourceURL]
   var qs = resourceURLs.map(x => `resource=${x}`).join('&')
   var permissionsURL = `/is-allowed?${qs}`
-  if (user !== null)
+  if (user != null)
     permissionsURL += '&user=' + user.replace('#', '%23')
-  if (action !== null)
+  if (action != null)
     permissionsURL += '&action=' + action
-  if (property !== null)
+  if (property != null)
     permissionsURL += '&property=' + property
-  if (base !== null)
+  if (base != null)
     permissionsURL += '&base=' + base
-  if (path !== null)
+  if (path != null)
     permissionsURL += '&path=' + path
-  lib.sendInternalRequestThen(res, 'GET', permissionsURL, lib.flowThroughHeaders(req), undefined, function (clientRes) {
+  lib.sendInternalRequestThen(res, 'GET', permissionsURL, headers, undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       try {
         body = JSON.parse(body)
@@ -104,15 +106,15 @@ function withAllowedDo(req, res, resourceURL, property, action, base, path, call
   })
 }
 
-function ifAllowedThen(req, res, resourceURL, property, action, base, path, callback) {
+function ifAllowedThen(headers, res, resourceURL, property, action, base, path, callback) {
   if (typeof base == 'function')
     [callback, base] = [base, callback] // swap them
-  withAllowedDo(req, res, resourceURL, property, action, base, path, function(allowed) {
+  withAllowedDo(headers, res, resourceURL, property, action, base, path, function(allowed) {
     if (allowed === true)
       callback()
     else
-      if (lib.getUser(req.headers.authorization) !== null) 
-        rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL || '//' + req.headers.host + req.url} property: ${property} action: ${action} user: ${lib.getUser(req.headers.authorization)}\n`)
+      if (lib.getUser(headers.authorization) !== null) 
+        rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL} property: ${property} action: ${action} user: ${lib.getUser(headers.authorization)}\n`)
       else 
         rLib.unauthorized(res)
   })
