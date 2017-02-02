@@ -22,8 +22,7 @@ Permissions.prototype.resolveRelativeURLs = function(baseURL) {
     }
 }
 
-function createPermissionsThen(req, res, resourceURL, permissions, callback, errorCallback) {
-  var flowThroughHeaders = req.headers
+function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions, callback, errorCallback) {
   var user = lib.getUser(flowThroughHeaders.authorization)
   if (user == null)
     rLib.unauthorized(res)
@@ -39,7 +38,7 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
         rLib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
-    lib.sendInternalRequestThen(res, 'POST','/permissions',  lib.flowThroughHeaders(req), postData, function (clientRes) {
+    lib.sendInternalRequestThen(res, 'POST','/permissions',  flowThroughHeaders, postData, function (clientRes) {
       lib.getClientResponseBody(clientRes, function(body) {
         if (clientRes.statusCode == 201) { 
           body = JSON.parse(body)
@@ -60,8 +59,8 @@ function createPermissionsThen(req, res, resourceURL, permissions, callback, err
   }
 }
 
-function deletePermissionsThen(req, res, resourceURL, callback) {
-  lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${resourceURL}`, lib.flowThroughHeaders(req), undefined, function (clientRes) {
+function deletePermissionsThen(flowThroughHeaders, res, resourceURL, callback) {
+  lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${resourceURL}`, flowThroughHeaders, undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       var statusCode = clientRes.statusCode
       if (statusCode !== 200)
