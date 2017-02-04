@@ -34,7 +34,7 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
         permissions._subject = resourceURL
       else if (permissions._subject != resourceURL)
         callback(400, 'value of _subject must match resourceURL')
-      else if (permissions._inheritsPermissionsOf === undefined && (permissions._self === undefined || permissions._self.governs === undefined)) 
+      else if (permissions._inheritsPermissionsOf === undefined && (permissions._self === undefined || permissions._self.govern === undefined)) 
         rLib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
