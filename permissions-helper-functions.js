@@ -70,7 +70,7 @@ function deletePermissionsThen(flowThroughHeaders, res, resourceURL, callback) {
   })  
 }
 
-function withAllowedDo(headers, res, resourceURL, property, action, base, path, callback) {
+function withAllowedDo(headers, res, resourceURL, property, action, base, path, callback, withScopes) {
   resourceURL = rLib.externalizeURLs(resourceURL)
   if (typeof base == 'function')
     [callback, base] = [base, callback] // swap them
@@ -88,6 +88,9 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
     permissionsURL += '&base=' + base
   if (path != null)
     permissionsURL += '&path=' + path
+  if (withScopes != null)
+    permissionsURL += '&withScopes'
+  console.log('permissionsURL', permissionsURL)
   lib.sendInternalRequestThen(res, 'GET', permissionsURL, headers, undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       try {
@@ -106,18 +109,18 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
   })
 }
 
-function ifAllowedThen(headers, res, resourceURL, property, action, base, path, callback) {
+function ifAllowedThen(headers, res, resourceURL, property, action, base, path, callback, withScopes) {
   if (typeof base == 'function')
-    [callback, base] = [base, callback] // swap them
+    [callback, withScopes, base] = [base, path, callback] // swap them
   withAllowedDo(headers, res, resourceURL, property, action, base, path, function(allowed) {
-    if (allowed === true)
-      callback()
+    if (withScopes ? allowed.allowed : allowed)
+      callback(allowed)
     else
       if (lib.getUser(headers.authorization) !== null) 
         rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL} property: ${property} action: ${action} user: ${lib.getUser(headers.authorization)}\n`)
       else 
         rLib.unauthorized(res)
-  })
+  }, withScopes)
 }
 
 exports.Permissions = Permissions
