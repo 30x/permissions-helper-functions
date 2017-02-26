@@ -90,7 +90,6 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
     permissionsURL += '&path=' + path
   if (withScopes != null)
     permissionsURL += '&withScopes'
-  console.log('permissionsURL', permissionsURL)
   lib.sendInternalRequestThen(res, 'GET', permissionsURL, headers, undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       try {
