@@ -111,9 +111,9 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
 function ifAllowedThen(headers, res, resourceURL, property, action, base, path, callback, withScopes) {
   if (typeof base == 'function')
     [callback, withScopes, base] = [base, path, callback] // swap them
-  withAllowedDo(headers, res, resourceURL, property, action, base, path, function(allowed) {
-    if (withScopes ? allowed.allowed : allowed)
-      callback(allowed)
+  withAllowedDo(headers, res, resourceURL, property, action, base, path, function(rslt) {
+    if (withScopes ? rslt.allowed : rslt)
+      callback(rslt)
     else
       if (lib.getUser(headers.authorization) !== null) 
         rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL} property: ${property} action: ${action} user: ${lib.getUser(headers.authorization)}\n`)
