@@ -33,12 +33,12 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
       if (permissions._subject === undefined)
         permissions._subject = resourceURL
       else if (permissions._subject != resourceURL)
-        callback(400, 'value of _subject must match resourceURL')
+        return rLib.badRequest(res, 'value of _subject must match resourceURL')
       else if (permissions._inheritsPermissionsOf === undefined && (permissions._self === undefined || permissions._self.govern === undefined)) 
-        rLib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
+        return rLib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
-    lib.sendInternalRequestThen(res, 'POST','/permissions',  flowThroughHeaders, postData, function (clientRes) {
+    lib.sendInternalRequestThen(res, 'POST', '/permissions',  flowThroughHeaders, postData, function (clientRes) {
       lib.getClientResponseBody(clientRes, function(body) {
         if (clientRes.statusCode == 201) { 
           body = JSON.parse(body)
@@ -101,7 +101,7 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
       if (statusCode == 200)
         callback(body)
       else if (statusCode == 404)
-        rLib.notFound(res, `Not Found. component: ${process.env.COMPONENT_NAME} permissionsURL: ${permissionsURL}\n`)
+        rLib.notFound(res, {msg: `Not Found. component: ${process.env.COMPONENT_NAME} permissionsURL: ${permissionsURL}`})
       else
         rLib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action} body: ${body}`)
     })
@@ -116,7 +116,7 @@ function ifAllowedThen(headers, res, resourceURL, property, action, base, path, 
       callback(rslt)
     else
       if (lib.getUser(headers.authorization) !== null) 
-        rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL} property: ${property} action: ${action} user: ${lib.getUser(headers.authorization)}\n`)
+        rLib.forbidden(res, {msg: `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL} property: ${property} action: ${action} user: ${lib.getUser(headers.authorization)}`})
       else 
         rLib.unauthorized(res)
   }, withScopes)
