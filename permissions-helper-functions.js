@@ -38,7 +38,7 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
         return rLib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
-    lib.sendInternalRequestThen(res, 'POST', '/permissions',  flowThroughHeaders, postData, function (clientRes) {
+    lib.sendInternalRequestThen(res, 'POST', '/az-permissions',  flowThroughHeaders, postData, function (clientRes) {
       lib.getClientResponseBody(clientRes, function(body) {
         if (clientRes.statusCode == 201) { 
           body = JSON.parse(body)
@@ -60,7 +60,7 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
 }
 
 function deletePermissionsThen(flowThroughHeaders, res, resourceURL, callback) {
-  lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${resourceURL}`, flowThroughHeaders, undefined, function (clientRes) {
+  lib.sendInternalRequestThen(res, 'DELETE', `/az-permissions?${resourceURL}`, flowThroughHeaders, undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       if (clientRes.statusCode == 200)
         callback()
@@ -77,7 +77,7 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
   var user = lib.getUser(headers.authorization)
   var resourceURLs = Array.isArray(resourceURL) ? resourceURL : [resourceURL]
   var qs = resourceURLs.map(x => `resource=${x}`).join('&')
-  var permissionsURL = `/is-allowed?${qs}`
+  var permissionsURL = `/az-is-allowed?${qs}`
   if (user != null)
     permissionsURL += '&user=' + user.replace('#', '%23')
   if (action != null)
