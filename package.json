@@ -1,6 +1,6 @@
 {
   "name": "@apigee/permissions-helper-functions",
-  "version": "0.0.52",
+  "version": "0.0.53",
   "description": "Helper function for use with the permissions service",
   "main": "permissions-helper-functions.js",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/30x/permissions-helper-functions#readme",
   "dependencies": {
-    "http-helper-functions": "0.0.102",
-    "response-helper-functions": "0.0.17"
+    "@apigee/http-helper-functions": "*",
+    "@apigee/response-helper-functions": "*"
   }
 }
