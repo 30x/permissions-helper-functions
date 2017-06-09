@@ -1,7 +1,7 @@
 'use strict'
 const url = require('url')
-const lib = require('http-helper-functions')
-const rLib = require('response-helper-functions')
+const lib = require('@apigee/http-helper-functions')
+const rLib = require('@apigee/response-helper-functions')
 
 function Permissions(permissions) {
   this.permissions = permissions
@@ -16,7 +16,7 @@ Permissions.prototype.resolveRelativeURLs = function(baseURL) {
       if (typeof permObject == 'object')
         for (var action in permObject)
           if (Array.isArray(permObject[action]))
-            // The Node resolve implementation has a bug that causes URLs of the form http://authority#frag to get 
+            // The Node resolve implementation has a bug that causes URLs of the form http://authority#frag to get
             // changed to http://authority/#frag (extra slash) so don't give the URL to resolve if it is a already an absolute URL
             permObject[action] = permObject[action].map(actor => actor.startsWith('http://') || actor.startsWith('https://') ? actor : url.resolve(baseURL, actor))
     }
@@ -34,13 +34,13 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
         permissions._subject = resourceURL
       else if (permissions._subject != resourceURL)
         return rLib.badRequest(res, 'value of _subject must match resourceURL')
-      else if (permissions._inheritsPermissionsOf === undefined && (permissions._self === undefined || permissions._self.govern === undefined)) 
+      else if (permissions._inheritsPermissionsOf === undefined && (permissions._self === undefined || permissions._self.govern === undefined))
         return rLib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
     lib.sendInternalRequestThen(res, 'POST', '/az-permissions',  flowThroughHeaders, postData, function (clientRes) {
       lib.getClientResponseBody(clientRes, function(body) {
-        if (clientRes.statusCode == 201) { 
+        if (clientRes.statusCode == 201) {
           body = JSON.parse(body)
           lib.internalizeURLs(body, flowThroughHeaders.host)
           callback(null, clientRes.headers.location, body, clientRes.headers)
@@ -52,7 +52,7 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
           rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} unable to create permissions for ${permissions._subject}. You may not be allowed to inherit permissions from ${permissions._inheritsPermissionsOf}`)
         else if (clientRes.statusCode == 409)
           rLib.duplicate(res, body)
-        else 
+        else
           rLib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${body}`})
       })
     })
@@ -67,7 +67,7 @@ function deletePermissionsThen(flowThroughHeaders, res, resourceURL, callback) {
       else
         rLib.internalError(res, `unable to delete permissions for ${resourceURL} statusCode: ${clientRes.statusCode} text: ${body}`)
     })
-  })  
+  })
 }
 
 function withAllowedDo(headers, res, resourceURL, property, action, base, path, callback, withScopes) {
@@ -115,9 +115,9 @@ function ifAllowedThen(headers, res, resourceURL, property, action, base, path, 
     if (withScopes ? rslt.allowed : rslt)
       callback(rslt)
     else
-      if (lib.getUser(headers.authorization) !== null) 
+      if (lib.getUser(headers.authorization) !== null)
         rLib.forbidden(res, {msg: `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL} property: ${property} action: ${action} user: ${lib.getUser(headers.authorization)}`})
-      else 
+      else
         rLib.unauthorized(res)
   }, withScopes)
 }
