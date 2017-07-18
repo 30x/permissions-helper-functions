@@ -3,6 +3,8 @@ const url = require('url')
 const lib = require('@apigee/http-helper-functions')
 const rLib = require('@apigee/response-helper-functions')
 
+const PERMISSIONS_URL = process.env.PERMISSIONS_URL
+
 function Permissions(permissions) {
   this.permissions = permissions
 }
@@ -38,7 +40,7 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
         return rLib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
-    lib.sendInternalRequestThen(res, 'POST', '/az-permissions',  flowThroughHeaders, postData, function (clientRes) {
+    lib.sendExternalRequestThen(res, 'POST', PERMISSIONS_URL + '/az-permissions',  flowThroughHeaders, postData, function (clientRes) {
       lib.getClientResponseBody(clientRes, function(body) {
         if (clientRes.statusCode == 201) {
           body = JSON.parse(body)
@@ -59,8 +61,37 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
   }
 }
 
+function createTeamThen(flowThroughHeaders, res, team, callback, errorCallback) {
+  var user = lib.getUser(flowThroughHeaders.authorization)
+  if (user == null)
+    rLib.unauthorized(res)
+  else {
+    if (team === null || team === undefined)
+      return rLib.badRequest(res, `may not set null permissions: ${resourceURL}`)
+    var postData = JSON.stringify(team)
+    lib.sendExternalRequestThen(res, 'POST', PERMISSIONS_URL + '/az-teams',  flowThroughHeaders, postData, function (clientRes) {
+      lib.getClientResponseBody(clientRes, function(body) {
+        if (clientRes.statusCode == 201) {
+          body = JSON.parse(body)
+          lib.internalizeURLs(body, flowThroughHeaders.host)
+          callback(clientRes.headers.location, body)
+        } else if (errorCallback)
+          errorCallback(clientRes.statusCode, body)
+        else if (clientRes.statusCode == 400)
+          rLib.badRequest(res, body)
+        else if (clientRes.statusCode == 403)
+          rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} unable to create team for ${team.name}.`)
+        else if (clientRes.statusCode == 409)
+          rLib.duplicate(res, body)
+        else
+          rLib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create team for ${team.name} statusCode ${clientRes.statusCode} message ${body}`})
+      })
+    })
+  }
+}
+
 function deletePermissionsThen(flowThroughHeaders, res, resourceURL, callback) {
-  lib.sendInternalRequestThen(res, 'DELETE', `/az-permissions?${resourceURL}`, flowThroughHeaders, undefined, function (clientRes) {
+  lib.sendExternalRequestThen(res, 'DELETE', PERMISSIONS_URL + `/az-permissions?${resourceURL}`, flowThroughHeaders, undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       if (clientRes.statusCode == 200)
         callback()
@@ -77,7 +108,7 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
   var user = lib.getUser(headers.authorization)
   var resourceURLs = Array.isArray(resourceURL) ? resourceURL : [resourceURL]
   var qs = resourceURLs.map(x => `resource=${x}`).join('&')
-  var permissionsURL = `/az-is-allowed?${qs}`
+  var permissionsURL = PERMISSIONS_URL + `/az-is-allowed?${qs}`
   if (user != null)
     permissionsURL += '&user=' + user.replace('#', '%23')
   if (action != null)
@@ -90,7 +121,7 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
     permissionsURL += '&path=' + path
   if (withScopes != null)
     permissionsURL += '&withScopes'
-  lib.sendInternalRequestThen(res, 'GET', permissionsURL, headers, undefined, function (clientRes) {
+  lib.sendExternalRequestThen(res, 'GET', permissionsURL, headers, undefined, function (clientRes) {
     lib.getClientResponseBody(clientRes, function(body) {
       try {
         body = JSON.parse(body)
@@ -127,3 +158,5 @@ exports.createPermissionsThen = createPermissionsThen
 exports.deletePermissionsThen = deletePermissionsThen
 exports.ifAllowedThen = ifAllowedThen
 exports.withAllowedDo = withAllowedDo
+exports.createTeamThen = createTeamThen
+
