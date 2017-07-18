@@ -40,7 +40,7 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
       else if (clientRes.statusCode == 409)
         rLib.duplicate(res, body)
       else
-        rLib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${body}`})
+        rLib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${JSON.stringify(body)}`})
     })
   }
   var user = lib.getUser(flowThroughHeaders.authorization)
@@ -85,7 +85,7 @@ function createTeamThen(flowThroughHeaders, res, team, callback, errorCallback) 
       else if (clientRes.statusCode == 409)
         rLib.duplicate(res, body)
       else
-        rLib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create team for ${team.name} statusCode ${clientRes.statusCode} message ${body}`})
+        rLib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create team for ${team.name} statusCode ${clientRes.statusCode} message ${JSON.stringify(body)}`})
     })
   }
   var user = lib.getUser(flowThroughHeaders.authorization)
@@ -157,6 +157,10 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
         callback(body)
       else if (statusCode == 404)
         rLib.notFound(res, {msg: `Not Found. component: ${process.env.COMPONENT_NAME} permissionsURL: ${permissionsURL}`})
+      else if (statusCode == 401)
+        rLib.unauthorized(res, body)
+      else if (statusCode == 403)
+        rLib.forbidden(res, body)
       else
         rLib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action} body: ${JSON.stringify(body)}`)
     })
