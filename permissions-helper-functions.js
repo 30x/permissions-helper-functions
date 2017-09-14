@@ -25,6 +25,7 @@ Permissions.prototype.resolveRelativeURLs = function(baseURL) {
 }
 
 function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions, callback, errorCallback) {
+  var user = lib.getUser(flowThroughHeaders.authorization)
   function processResponse(clientRes) {
     lib.getClientResponseBody(clientRes, (body) => {
       if (clientRes.statusCode == 201) {
@@ -36,19 +37,24 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
       else if (clientRes.statusCode == 400)
         rLib.badRequest(res, body)
       else if (clientRes.statusCode == 403)
-        rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} unable to create permissions for ${permissions._subject}. You may not be allowed to inherit permissions from ${permissions._inheritsPermissionsOf}`)
+        rLib.forbidden(res, {
+          msg:'Forbidden. Unable to create permissions. You may not be allowed to inherit permissions from sharingSets', 
+          component: process.env.COMPONENT_NAME, 
+          subject: permissions._subject, 
+          sharingSets: permissions._inheritsPermissionsOf, 
+          user: user
+        })
       else if (clientRes.statusCode == 409)
         rLib.duplicate(res, body)
       else
         rLib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create permissions for ${resourceURL} statusCode ${clientRes.statusCode} message ${JSON.stringify(body)}`})
     })
   }
-  var user = lib.getUser(flowThroughHeaders.authorization)
   if (user == null)
     rLib.unauthorized(res)
   else {
     if (permissions === null || permissions === undefined)
-      rLib.badRequest(res, `may not set null permissions: ${resourceURL}`)
+      rLib.badRequest(res, {msg: 'may not set null permissions', resource: resourceURL})
     else {
       if (permissions._subject === undefined)
         permissions._subject = resourceURL
@@ -71,9 +77,8 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
 
 function createTeamThen(flowThroughHeaders, res, team, callback, errorCallback) {
   function processResponse(clientRes) {
-    lib.getClientResponseBody(clientRes, (body) => {
+    lib.getClientResponseObject(res, clientRes, null, (body) => {
       if (clientRes.statusCode == 201) {
-        body = JSON.parse(body)
         lib.internalizeURLs(body, flowThroughHeaders.host)
         callback(clientRes.headers.location, body)
       } else if (errorCallback)
@@ -81,11 +86,11 @@ function createTeamThen(flowThroughHeaders, res, team, callback, errorCallback) 
       else if (clientRes.statusCode == 400)
         rLib.badRequest(res, body)
       else if (clientRes.statusCode == 403)
-        rLib.forbidden(res, `Forbidden. component: ${process.env.COMPONENT_NAME} unable to create team for ${team.name}.`)
+        rLib.forbidden(res, {msg: 'Forbidden. unable to create team', component: process.env.COMPONENT_NAME, reason: body})
       else if (clientRes.statusCode == 409)
         rLib.duplicate(res, body)
       else
-        rLib.internalError(res, {statusCode: clientRes.statusCode, msg: `failed to create team for ${team.name} statusCode ${clientRes.statusCode} message ${JSON.stringify(body)}`})
+        rLib.internalError(res, {statusCode: clientRes.statusCode, msg: 'failed to create team', body: body})
     })
   }
   var user = lib.getUser(flowThroughHeaders.authorization)
