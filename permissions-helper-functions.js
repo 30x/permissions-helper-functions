@@ -125,26 +125,17 @@ function deleteTeamThen(flowThroughHeaders, res, resourceURL, callback) {
 }
 
 function createEntryThen(flowThroughHeaders, res, entry, callback) {
-  lib.postToInternalResourceThen(res, permissionsServiceUrl('/dir-entries'), flowThroughHeaders, entry, callback)
+  lib.postToInternalResourceThen(res, permissionsServiceUrl('/name-entries'), flowThroughHeaders, entry, callback)
 }
 
-function withDirectoryEntryDo(flowThroughHeaders, res, path, callback) {
-  let searchUrl = permissionsServiceUrl(`/dir-entries?${path}`)
+function withNameEntryDo(flowThroughHeaders, res, path, callback) {
+  let searchUrl = permissionsServiceUrl(`/name-entry?${path}`)
   lib.withInternalResourceDo(res, searchUrl, flowThroughHeaders, callback)
 }
 
-function deleteEntryThen(flowThroughHeaders, res, directory, name, resource, callback) {
-  if (!directory)
-    return rLib.internalError(res, {msg: 'permissions-helper-functions::deleteEntryThen must provide directory and name or directory and resource', directory: directory, name: name, resource: resource})
-  let qs = `directory=${directory}`
-  if (name)
-    qs += `&name=${name}`
-  else if (resource)
-    qs += `&resource=${resource}`
-  else
-    return rLib.internalError(res, {msg: 'permissions-helper-functions::deleteEntryThen must provide directory and name or directory and resource', directory: directory, name: name, resource: resource})
-  let searchUrl = permissionsServiceUrl(`/dir-entries?${qs}`)
-  lib.withInternalResourceDo(res, searchUrl, flowThroughHeaders, callback)
+function deleteEntriesThen(flowThroughHeaders, res, query, callback) {
+  let searchUrl = permissionsServiceUrl(`/name-entries?${query}`)
+  lib.deleteInternalResourceThen(res, searchUrl, flowThroughHeaders, callback)
 }
 
 function withAllowedDo(headers, res, resourceURL, property, action, base, path, callback, withScopes) {
@@ -212,5 +203,5 @@ exports.withAllowedDo = withAllowedDo
 exports.createTeamThen = createTeamThen
 exports.deleteTeamThen = deleteTeamThen
 exports.createEntryThen = createEntryThen
-exports.deleteEntryThen = deleteEntryThen
-exports.withDirectoryEntryDo = withDirectoryEntryDo
+exports.deleteEntriesThen = deleteEntriesThen
+exports.withNameEntryDo = withNameEntryDo
