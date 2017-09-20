@@ -81,7 +81,6 @@ function createTeamThen(flowThroughHeaders, res, team, callback, errorCallback) 
     if (team === null || team === undefined)
       return rLib.badRequest(res, `may not set null permissions: ${resourceURL}`)
     var postData = JSON.stringify(team)
-    console.log('\n\n', permissionsServiceUrl('/az-teams'), '\n\n')
     lib.sendInternalRequestThen(res, 'POST', permissionsServiceUrl('/az-teams'),  flowThroughHeaders, postData, function (clientRes) {
       lib.getClientResponseObject(res, clientRes, null, (body) => {
         if (clientRes.statusCode == 201) {
