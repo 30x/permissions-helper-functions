@@ -137,7 +137,7 @@ function deleteEntriesThen(flowThroughHeaders, res, query, callback) {
   lib.deleteInternalResourceThen(res, searchUrl, flowThroughHeaders, callback)
 }
 
-function withAllowedDo(headers, res, resourceURL, property, action, base, path, callback, withScopes) {
+function withAllowedDo(headers, res, resourceURL, property, action, callback, withScopes) {
   resourceURL = rLib.externalizeURLs(resourceURL)
   if (typeof base == 'function')
     [callback, base] = [base, callback] // swap them
@@ -151,10 +151,6 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
     permissionsUrl += '&action=' + action
   if (property != null)
     permissionsUrl += '&property=' + property
-  if (base != null)
-    permissionsUrl += '&base=' + base
-  if (path != null)
-    permissionsUrl += '&path=' + path
   if (withScopes != null)
     permissionsUrl += '&withScopes'
   permissionsUrl = permissionsServiceUrl(permissionsUrl) 
@@ -180,10 +176,8 @@ function withAllowedDo(headers, res, resourceURL, property, action, base, path, 
   })
 }
 
-function ifAllowedThen(headers, res, resourceURL, property, action, base, path, callback, withScopes) {
-  if (typeof base == 'function')
-    [callback, withScopes, base] = [base, path, callback] // swap them
-  withAllowedDo(headers, res, resourceURL, property, action, base, path, function(rslt) {
+function ifAllowedThen(headers, res, resourceURL, property, action, callback, withScopes) {
+  withAllowedDo(headers, res, resourceURL, property, action, function(rslt) {
     if (withScopes ? rslt.allowed : rslt)
       callback(rslt)
     else
