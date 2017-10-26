@@ -139,8 +139,6 @@ function deleteEntriesThen(flowThroughHeaders, res, query, callback) {
 
 function withAllowedDo(headers, res, resourceURL, property, action, callback, withScopes) {
   resourceURL = rLib.externalizeURLs(resourceURL)
-  if (typeof base == 'function')
-    [callback, base] = [base, callback] // swap them
   var user = lib.getUser(headers.authorization)
   var resourceURLs = Array.isArray(resourceURL) ? resourceURL : [resourceURL]
   var qs = resourceURLs.map(x => `resource=${x}`).join('&')
