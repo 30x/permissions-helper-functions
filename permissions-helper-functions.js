@@ -1,7 +1,6 @@
 'use strict'
 const url = require('url')
 const lib = require('@apigee/http-helper-functions')
-const rLib = require('@apigee/response-helper-functions')
 
 const PERMISSIONS_BASE = process.env.PERMISSIONS_BASE || ""
 
@@ -34,17 +33,17 @@ Permissions.prototype.resolveRelativeURLs = function(baseURL) {
 function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions, callback, errorCallback) {
   var user = lib.getUser(flowThroughHeaders.authorization)
   if (user == null)
-    rLib.unauthorized(res)
+    lib.unauthorized(null, res)
   else {
     if (permissions === null || permissions === undefined)
-      rLib.badRequest(res, {msg: 'may not set null permissions', resource: resourceURL})
+      lib.badRequest(null, res, {msg: 'may not set null permissions', resource: resourceURL})
     else {
       if (permissions._subject === undefined)
         permissions._subject = resourceURL
       else if (permissions._subject != resourceURL)
-        return rLib.badRequest(res, 'value of _subject must match resourceURL')
+        return lib.badRequest(null, res, 'value of _subject must match resourceURL')
       else if (permissions._inheritsPermissionsOf === undefined && (permissions._self === undefined || permissions._self.govern === undefined))
-        return rLib.badRequest(res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
+        return lib.badRequest(null, res, `permissions for ${resourceURL} must specify inheritance or at least one governor`)
     }
     var postData = JSON.stringify(permissions)
     lib.sendInternalRequestThen(res, 'POST', permissionsServiceUrl('/az-permissions'),  flowThroughHeaders, postData, function (clientRes) {
@@ -55,9 +54,9 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
         } else if (errorCallback)
           errorCallback(clientRes.statusCode, body)
         else if (clientRes.statusCode == 400)
-          rLib.badRequest(res, body)
+          lib.badRequest(null, res, body)
         else if (clientRes.statusCode == 403)
-          rLib.forbidden(res, {
+          lib.forbidden(null, res, {
             msg:'Forbidden. Unable to create permissions. You may not be allowed to inherit permissions from sharingSets', 
             component: process.env.COMPONENT_NAME, 
             subject: permissions._subject, 
@@ -65,9 +64,9 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
             user: user
           })
         else if (clientRes.statusCode == 409)
-          rLib.duplicate(res, body)
+          lib.duplicate(res, body)
         else
-          rLib.internalError(res, {statusCode: clientRes.statusCode, msg: 'permissions-helper-function::createPermissionsThen failed to create permissions', resource: resourceURL, statusCode: clientRes.statusCode, body: body, permissionsUrl:  permissionsServiceUrl(`/az-permissions?${resourceURL}`)})
+          lib.internalError(res, {statusCode: clientRes.statusCode, msg: 'permissions-helper-function::createPermissionsThen failed to create permissions', resource: resourceURL, statusCode: clientRes.statusCode, body: body, permissionsUrl:  permissionsServiceUrl(`/az-permissions?${resourceURL}`)})
       })
     })
   }
@@ -76,10 +75,10 @@ function createPermissionsThen(flowThroughHeaders, res, resourceURL, permissions
 function createTeamThen(flowThroughHeaders, res, team, callback, errorCallback) {
   var user = lib.getUser(flowThroughHeaders.authorization)
   if (user == null)
-    rLib.unauthorized(res)
+    lib.unauthorized(null, res)
   else {
     if (team === null || team === undefined)
-      return rLib.badRequest(res, `may not set null permissions: ${resourceURL}`)
+      return lib.badRequest(null, res, `may not set null permissions: ${resourceURL}`)
     var postData = JSON.stringify(team)
     lib.sendInternalRequestThen(res, 'POST', permissionsServiceUrl('/az-teams'),  flowThroughHeaders, postData, function (clientRes) {
       lib.getClientResponseObject(res, clientRes, null, (body) => {
@@ -89,13 +88,13 @@ function createTeamThen(flowThroughHeaders, res, team, callback, errorCallback) 
         } else if (errorCallback)
           errorCallback(clientRes.statusCode, body)
         else if (clientRes.statusCode == 400)
-          rLib.badRequest(res, body)
+          lib.badRequest(null, res, body)
         else if (clientRes.statusCode == 403)
-          rLib.forbidden(res, {msg: 'Forbidden. unable to create team', component: process.env.COMPONENT_NAME, reason: body})
+          lib.forbidden(null, res, {msg: 'Forbidden. unable to create team', component: process.env.COMPONENT_NAME, reason: body})
         else if (clientRes.statusCode == 409)
-          rLib.duplicate(res, body)
+          lib.duplicate(res, body)
         else
-          rLib.internalError(res, {statusCode: clientRes.statusCode, msg: 'permissions-helper-functions::createTeamThen failed to create team', body: body})
+          lib.internalError(res, {statusCode: clientRes.statusCode, msg: 'permissions-helper-functions::createTeamThen failed to create team', body: body})
       })
     })
   }
@@ -107,7 +106,7 @@ function deletePermissionsThen(flowThroughHeaders, res, resourceURL, callback) {
       if (clientRes.statusCode == 200)
         callback()
       else
-        rLib.internalError(res, `unable to delete permissions for ${resourceURL} statusCode: ${clientRes.statusCode} text: ${body}`)
+        lib.internalError(res, `unable to delete permissions for ${resourceURL} statusCode: ${clientRes.statusCode} text: ${body}`)
     })
   })
 }
@@ -118,7 +117,7 @@ function deleteTeamThen(flowThroughHeaders, res, resourceURL, callback) {
       if (clientRes.statusCode == 200)
         callback()
       else
-        rLib.internalError(res, `unable to delete team ${resourceURL} statusCode: ${clientRes.statusCode} text: ${body}`)
+        lib.internalError(res, `unable to delete team ${resourceURL} statusCode: ${clientRes.statusCode} text: ${body}`)
     })
   })
 }
@@ -138,7 +137,6 @@ function deleteEntriesThen(flowThroughHeaders, res, query, callback) {
 }
 
 function withAllowedDo(headers, res, resourceURL, property, action, callback, withScopes) {
-  resourceURL = rLib.externalizeURLs(resourceURL)
   var user = lib.getUser(headers.authorization)
   var resourceURLs = Array.isArray(resourceURL) ? resourceURL : [resourceURL]
   var qs = resourceURLs.map(x => `resource=${x}`).join('&')
@@ -163,13 +161,13 @@ function withAllowedDo(headers, res, resourceURL, property, action, callback, wi
       if (statusCode == 200)
         callback(body)
       else if (statusCode == 404)
-        rLib.notFound(res, {msg: `Not Found. component: ${process.env.COMPONENT_NAME} permissionsUrl: ${permissionsUrl}`})
+        lib.notFound(null, res);
       else if (statusCode == 401)
-        rLib.unauthorized(res, body)
+        lib.unauthorized(null, res, body)
       else if (statusCode == 403)
-        rLib.forbidden(res, body)
+        lib.forbidden(null, res, body)
       else
-        rLib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action} body: ${JSON.stringify(body)}`)
+        lib.internalError(res, `unable to retrieve withAllowedDo statusCode: ${statusCode} resourceURL: ${resourceURL} property: ${property} action: ${action} body: ${JSON.stringify(body)}`)
     })
   })
 }
@@ -180,9 +178,9 @@ function ifAllowedThen(headers, res, resourceURL, property, action, callback, wi
       callback(rslt)
     else
       if (lib.getUser(headers.authorization) !== null)
-        rLib.forbidden(res, {msg: `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL} property: ${property} action: ${action} user: ${lib.getUser(headers.authorization)}`})
+        lib.forbidden(null, res, {msg: `Forbidden. component: ${process.env.COMPONENT_NAME} resourceURL: ${resourceURL} property: ${property} action: ${action} user: ${lib.getUser(headers.authorization)}`})
       else
-        rLib.unauthorized(res)
+        lib.unauthorized(null, res)
   }, withScopes)
 }
 

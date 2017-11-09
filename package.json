@@ -1,6 +1,6 @@
 {
   "name": "@apigee/permissions-helper-functions",
-  "version": "0.0.66",
+  "version": "0.0.67",
   "description": "Helper function for use with the permissions service",
   "main": "permissions-helper-functions.js",
   "scripts": {
