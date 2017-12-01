@@ -155,13 +155,15 @@ function withAllowedDo(headers, res, resourceURL, property, action, callback, wi
       try {
         body = JSON.parse(body)
       } catch (e) {
-        console.error('withAllowedDo: JSON parse failed. url:', permissionsUrl, 'body:', body, 'error:', e)
+        let err = `withAllowedDo: JSON parse failed url: ${permissionsUrl} body: '${body}' error: ${e}`
+        console.error(err)
+        return lib.internalError(res, {msg: 'bad response from permissions runtime', err: err})
       }
       var statusCode = clientRes.statusCode
       if (statusCode == 200)
         callback(body)
       else if (statusCode == 404)
-        lib.notFound(null, res);
+        lib.notFound(null, res, {msg: 'not found', url: permissionsUrl})
       else if (statusCode == 401)
         lib.unauthorized(null, res, body)
       else if (statusCode == 403)
